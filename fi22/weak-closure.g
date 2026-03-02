@@ -19,7 +19,7 @@ C := SubgroupsSolvableGroup(G, rec(series := DerivedSeries(S), groups := [S]));;
 Number(C, A -> Size(A) = 3^7 and Exponent(A) = 3); # should be 1
 
 # -------------------------------------------------------------------------------------------------
-# The only subgroup of order $3^7$ of exponent $3$ is $3^{1+6}_+$
+# The maximal elementary abelian subgroups of $S$ have order $3^5$, and there is only one such group.
 # -------------------------------------------------------------------------------------------------
 A := Filtered(C, IsElementaryAbelian);;
 Maximum(List(A, Size)); # should be 3^5
