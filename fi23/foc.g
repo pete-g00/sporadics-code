@@ -12,10 +12,6 @@ StepCentralizer := function(G, A, U)
     return Kernel(ActionHomomorphism(G, Image(q,A), OnQuotient(q)));
 end;
 
-# -------------------------------------------------------------------------------------------------
-# $[S, Q \cap R] \nleq \Phi(R)$
-# -------------------------------------------------------------------------------------------------
-
 G := SimpleGroup("Fi23");
 S := SylowSubgroup(G, 3);
 f := IsomorphismPcGroup(S);;
@@ -31,6 +27,11 @@ S := ModuleOfExtension(G);
 
 U := UpperCentralSeries(S);;
 R := Centralizer(S, U[8]);
+U := Centralizer(S, U[7]);
+
+# -------------------------------------------------------------------------------------------------
+# $[S, Q \cap R] \nleq \Phi(R)$
+# -------------------------------------------------------------------------------------------------
 
 W := First(CharacteristicSubgroups(S), A -> Exponent(A) = 3 and Rank(A) = 8);
 
@@ -39,9 +40,8 @@ q := NaturalHomomorphismByNormalSubgroup(S, W);;
 Q := First(MaximalSubgroups(Image(q)), IsElementaryAbelian);
 Q := PreImage(q, Q);
 
-C := CommutatorSubgroup(S, Intersection(Q,R));
-
-IsSubset(FrattiniSubgroup(R), C); # false
+Intersection(R, Q, U) = FrattiniSubgroup(R); # should be true
+ClosureGroup(Intersection(R,Q), U) = R; # should be true
 
 # -------------------------------------------------------------------------------------------------
 # If $B \in \Syl_2(\Aut(S))$, then $C := C_B(S/Q)$ has order $2^2$ and satisfies $[S, C] = Q$.

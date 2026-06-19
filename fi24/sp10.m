@@ -1,120 +1,111 @@
-M := [M1,M2,M3,M4,M5,M6,M7];
-V := GModule(G);
-R := [Restriction(V, Sylow(A,3)) : A in M];
-I := [i : i in [1..#R]  Dimension(Fix(R[i])) eq 1];
-I; // should be [ 6, 7 ]
-CompositionFactors(M6);
-CompositionFactors(M7);
+LMGpResidue := function(G,p)
+    return LMGNormalClosure(G, LMGSylow(G,p));
+end function;
 
-M := [M8,M9,M10,M11,M12];
-P := [LMGpCore(A,3) : A in M];
-S := [LMGSylow(A,3) : A in M];
-F := [PermutationRepresentation(A) : A in S];
-Sf := [(F[i])(S[i]) : i in [1..#M]];
-Pf := [(F[i])(P[i]) : i in [1..#M]];
-G := [MinimalDegreePermutationRepresentation(A : Accept := Degree(A) - 1) : A in Sf];
-Sg := [(G[i])(Sf[i]) : i in [1..#M]];
-Pg := [(G[i])(Pf[i]) : i in [1..#M]];
-C := [Complements(Sg[i], Pg[i]) : i in [1..#M]];
-C := [[(G[i]^-1)(A) : A in C[i]] : i in [1..#M]];
-C := [[(F[i]^-1)(A) : A in C[i]] : i in [1..#M]];
+M := ClassicalMaximals("S", 10, 3);
+G := sub<GL(10,3) | M[1], M[2]>;
 
 V := GModule(G);
+M := [A : A in M | Dimension(Fix(Restriction(V,LMGSylow(A,3)))) eq 1];
 
-R := [[Restriction(V,A) : A in T] : T in C];
-[{Dimension(Fix(A)) : A in T} : T in R]; // only the third one (M10) contains 1
-ChiefFactors(M10);
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// Maximal subgroups $M$ of $\Sp_8(3)$ of interest are $M_i$ for $1 \leq i \leq 6$.
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------------
+M1 := [A : A in M | #A eq 2 * 3^9 * #Sp(8,3)][1]; // $M_1 := 2 \times 3^{1+8}_+ : \Sp_8(3)$, 
+M2 := [A : A in M | #A eq 3^15 * 48 * #Sp(6,3)][1]; // $M_2 := 3^{3+12} : (\GL_2(3) \times \Sp_6(3))$, 
+M3 := [A : A in M | #A eq 3^15 * #GL(5,3)][1]; // $M_3 := 3^{15} : \GL_5(3)$, 
+M4 := [A : A in M | #A eq 3^18 * #GL(4,3) * 24 and #Center(pCore(A,3)) eq 3^10][1]; // $M_4 := 3^{10+8} : (\GL_4(3) \times \Sp_2(3))$, 
+M5 := [A : A in M | #A eq 3^18 * #GL(3,3) * #Sp(4,3) and #Center(pCore(A,3)) eq 3^6][1]; // $M_5 := 3^{6+12} : (\GL_3(3) \times \Sp_4(3))$, 
+M6 := [A : A in M | #A eq 2 * #PSU(5,2)][1]; // $M_6 := 2 \times \PSU_5(2)$,
+M7 := [A : A in M | #A eq #Sp(2,3) * #SO(5,3)][1]; // $M_7 := \Sp_2(3) \circ \GO_5(3)$
 
-// TODO: Prove that the actual group satisfies all the assumptions
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// If $L := O^{3')(M_1)$, then no involution $t \in T$ is such that $S_0 \in \Syl_3(C_L(t))$ satisfies $|C_V(S_0)| = 3$.
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------------
+L := LMGpResidue(M1,3);
+#LMGCenter(L); // should equal 3
+L2 := LMGSylow(L,2);
+A := LMGConjugacyClasses(L2);
+A := [a[3] : a in A | a[1] eq 2]; // involutions only
+T := [CentraliserOfInvolution(L,a) : a in A];
+T := [A : A in T | Dimension(Fix(Restriction(V,LMGSylow(A,3)))) eq 1];
+#T; // should equal 0
 
-// Ruling out the central product
-S6 := LMGSylow(M6,3);
-S7 := LMGSylow(M6,3);
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// If $L := O^{3')(M_2)$, then no non-central involution $t \in T$ is such that $S_0 \in \Syl_3(C_L(t))$ satisfies $|C_V(S_0)| = 3$.
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------------
+L := LMGpResidue(M2,3);
+#LMGCenter(L); // should equal 2
+L2 := LMGSylow(L,2);
+A := LMGConjugacyClasses(L2);
+A := [a[3] : a in A | a[1] eq 2 and not a[3] in Center(L)]; // involutions only
+T := [CentraliserOfInvolution(L,a) : a in A];
+T := [A : A in T | Dimension(Fix(Restriction(V,LMGSylow(A,3)))) eq 1];
+#T; // should equal 0
 
-f7 := PermutationRepresentation(S7);
-f6 := PermutationRepresentation(S6);
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// If $L := O^{3')(M_3)$, then no involution $t \in T$ is such that $S_0 \in \Syl_3(C_L(t))$ satisfies $|C_V(S_0)| = 3$.
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------------
+L := LMGpResidue(M3,3);
+#LMGCenter(L); // should equal 1
+L2 := LMGSylow(L,2);
+A := LMGConjugacyClasses(L2);
+A := [a[3] : a in A | a[1] eq 2]; // involutions only
+T := [CentraliserOfInvolution(L,a) : a in A];
+T := [A : A in T | Dimension(Fix(Restriction(V,LMGSylow(A,3)))) eq 1];
+#T; // should equal 0
 
-C6 := Subgroups(S6 : OrderEqual := 3^3);
-C6 := [A`subgroup : A in C6];
-C6 := [A : A in C6  IdentifyGroup(A) eq <3^3, 3>];
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// If $L := O^{3')(M_4)$, then no non-central involution $t \in T$ is such that $S_0 \in \Syl_3(C_L(t))$ satisfies $|C_V(S_0)| = 3$.
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------------
+L := LMGpResidue(M4,3);
+#LMGCenter(L); // should equal 2
+L2 := LMGSylow(L,2);
+A := LMGConjugacyClasses(L2);
+A := [a[3] : a in A | a[1] eq 2 and not a[3] in Center(L)]; // involutions only
+T := [CentraliserOfInvolution(L,a) : a in A];
+T := [A : A in T | Dimension(Fix(Restriction(V,LMGSylow(A,3)))) eq 1];
+#T; // should equal 0
 
-C7 := Subgroups(S7 : OrderEqual := 3^3);
-C7 := [A`subgroup : A in C7];
-C7 := [A : A in C7  IdentifyGroup(A) eq <3^3, 3>];
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// If $L := O^{3')(M_5)$, then no involution $t \in T$ is such that $S_0 \in \Syl_3(C_L(t))$ satisfies $|C_V(S_0)| = 3$.
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------------
+L := LMGpResidue(M5,3);
+#LMGCenter(L); // should equal 1
+L2 := LMGSylow(L,2);
+A := LMGConjugacyClasses(L2);
+A := [a[3] : a in A | a[1] eq 2]; // involutions only
+T := [CentraliserOfInvolution(L,a) : a in A];
+T := [A : A in T | Dimension(Fix(Restriction(V,LMGSylow(A,3)))) eq 1];
+#T; // should equal 0
 
-C6 := [A : A in C6  Normalizer(S6,A) eq S6];
-C7 := [A : A in C7  Normalizer(S7,A) eq S7];
-#C6; // should be 3
-#C7; // should be 3
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// Inside $M_6$, $|C_V(A)| = 3^4$ for some complement $A$ of $N \cong 3^{1+2}_+$ inside $S \in \Syl_3(M_6)$.
+// $O^{3'}(M_6)$ acts irreducibly on $V$.
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------------
+S := LMGSylow(M6,3);
+N := NormalSubgroups(S);
+N := [A`subgroup : A in N];
+N := [A : A in N | #A eq 3^3 and IdentifyGroup(A) eq <3^3, 3>];
 
-Co6 := [Complements(f6(S6), f6(A)) : A in C6];
-Co7 := [Complements(f7(S7), f7(A)) : A in C7];
+f := PermutationRepresentation(S);
+N := [f(A) : A in N];
+A := [Complements(Image(f),A) :A  in N];
+A := [(f^-1)(T) : T in X, X in A];
+{Dimension(Fix(Restriction(V,X))) : X in A}; // equals 3 or 4
 
-{{Dimension(Fix(Restriction(V,(f6^-1)(A)))) : A in X} : X in Co6}; // should be {{3}}
-{{Dimension(Fix(Restriction(V,(f7^-1)(A)))) : A in X} : X in Co7}; // should be {{3, 4}}
+Dimension(Fix(Restriction(V, LMGpResidue(M6,3)))); // equals 0
 
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// Inside $M_7$, $|C_V(A)| = 3^3$ for every complement $A$ of $N \cong 3^{1+2}_+$ inside $S \in \Syl_3(M_6)$.
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------------
+S := LMGSylow(M7,3);
+N := NormalSubgroups(S);
+N := [A`subgroup : A in N];
+N := [A : A in N | #A eq 3^3 and IdentifyGroup(A) eq <3^3, 3>];
 
-// New work
-> S := LMGSylow(M10, 3);
-> P := LMGpCore(M10, 3);
->           
-> f := PermutationRepresentation(S);                        
-> S := f(S);
-> P := f(P);
-> Degree(S);
-32841       
->           
-> g := MinimalDegreePermutationRepresentation(S : Accept := Degree(S) - 1);                            
-> S := g(S);
-> P := g(P);
-> Degree(S);
-2187        
->           
-> V := GModule(G);      
->           
-> CheckDimension := function(C, d)                          
-function>     C := [(g^-1)(A) : A in C];                    
-function>     C := [(f^-1)(A) : A in C];                    
-function>     C := [A : A in C | Dimension(Fix(Restriction(V,A))) eq d];                               
-function>     C := [f(A) : A in C];                         
-function>     C := [g(A) : A in C];                         
-function>     return C; 
-function> end function; 
->           
-> C := Complements(S, P);                                   
-> #C;       
-7047        
->           
-> C := CheckDimension(C, 1);                                
-> #C;       
-324         
->           
-> C := [Subgroups(A : OrderEqual := 3^5) : A in C];         
-> C := [[X`subgroup : X in A] : A in C];                    
-> C := [X : X in A, A in C | IdentifyGroup(X) eq <3^5, 51>];
-> #C;       
-37908       
->           
-> C := CheckDimension(C, 1);                                
-> #C;       
-23328       
->           
-> E := [NormalSubgroups(A : OrderEqual := 3^3) : A in C];   
-> E := [[X`subgroup : X in A] : A in E];                    
-> E := [[X : X in A | IdentifyGroup(X) eq <3^3, 3>] : A in E];     
-> #E;       
-23328       
->           
-> {{Dimension(Fix(Restriction(V, (f^-1)((g^-1)(A))))) : A in T} : T in E};                             
-{
-    { 2 },  
-    { 3, 5 },           
-    { 3 },  
-    { 3, 4 },           
-    { 4, 5 }
-}           
-
-// cohomological stuff
-CohomologicalDimension(Restriction(V,M7),1);
-0
-
+f := PermutationRepresentation(S);
+N := [f(A) : A in N];
+A := [Complements(Image(f),A) :A  in N];
+A := [(f^-1)(T) : T in X, X in A];
+{Dimension(Fix(Restriction(V,X))) : X in A}; // equals 3

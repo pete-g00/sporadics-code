@@ -1,3 +1,17 @@
+OnQuotient := function(q)
+    return function(t, x)
+        return Image(q, PreImagesRepresentative(q,t)^x);
+    end;
+end;
+
+# Computes C_G(A/U)
+StepCentralizer := function(G, A, U)
+    local q;
+    
+    q := NaturalHomomorphismByNormalSubgroup(G,U);
+    return Kernel(ActionHomomorphism(G, Image(q,A), OnQuotient(q)));
+end;
+
 G := SimpleGroup("O(+1,8,3)");
 S := SylowSubgroup(G, 3);
 
@@ -71,10 +85,15 @@ FR = CommutatorSubgroup(CommutatorSubgroup(R,S), S);
 # $O^{3'}(\Out_F(T_i)) \cong \SL_3(3) 
 # -------------------------------------------------------------------------------------------------
 
-# $V_i \cap V_{i+1} = Z(T_{i+1})$
-Intersection(V[1], V[2]) = Center(T[2]); # should be true
-Intersection(V[2], V[3]) = Center(T[3]); # should be true
-Intersection(V[3], V[1]) = Center(T[1]); # should be true
+# $C_S(V_i/Z(T_i)) = T_i$
+StepCentralizer(S, V[1], Center(T[1])) = T[1]; # true
+StepCentralizer(S, V[2], Center(T[2])) = T[2]; # true
+StepCentralizer(S, V[3], Center(T[3])) = T[3]; # true
+
+# $C_S(V_{i-1}/Z(T_i)) = T_i$
+StepCentralizer(S, V[3], Center(T[1])) = T[1]; # true
+StepCentralizer(S, V[1], Center(T[2])) = T[2]; # true
+StepCentralizer(S, V[2], Center(T[3])) = T[3]; # true
 
 List([1..3], i -> Index(V[i], Center(T[i]))); # should be 3 in each case
 

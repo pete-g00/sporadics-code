@@ -1,5 +1,5 @@
 DeclareInfoClass("InfoFusion");
-SetInfoLevel(InfoFusion, 1);
+SetInfoLevel(InfoFusion, 3);
 
 Automizer := function(G, H)
     local NGH, L, AutGH;
@@ -38,6 +38,10 @@ end;
 
 # $C_{N_S(E)}(E/\Phi(E)) \leq E$
 IsProtoEssentialSubgroup_Frat := function(S, E)
+    # Specific case when $C_{N_S(E)}(E/\Phi(E)) = N_S(E)$
+    if CommutatorSubgroup(Normalizer(S,E), E) = FrattiniSubgroup(E) then 
+        return false;
+    fi;
     # TODO: use exponents analysis for $E/\Phi(E)$ by the action of $S$?
     return IsSubset(E, StepCentralizer(Normalizer(S,E),E,FrattiniSubgroup(E)));
 end;
@@ -163,10 +167,113 @@ PcSubAutPGroup := function(AutPC, A)
     return Subgroup(AutPC, A_m);
 end;
 
+# Lifts in $\SL_2(q)$
+IsProtoEssentialSubgroup_EABLiftSL2q := function(S,E,N)
+    local p, q, a, AutN, OutN;
+    
+    Info(InfoFusion, 2, "\tChecking lift of type SL_2(q)");
+    
+    p := PrimePGroup(S);
+    q := Index(N, E);
+
+    a := (q-1)/2;
+
+    Info(InfoFusion, 2, "\tNeed an element of order ", a, " in Aut(N_S(E))");
+    Info(InfoFusion, 2, "\tConstructing Aut(N_S(E))");
+    # check Aut(N) has an element of order a
+    AutN := AutomorphismGroupPGroup(N);
+    if AutN.size mod a <> 0 then 
+        Info(InfoFusion, 2, "\tNo element of order ", a, " in Aut(N_S(E))");
+        return false;
+    fi;
+    if AutN.glOrder = 1 then 
+        Info(InfoFusion, 2, "\tAut(N_S(E)) is solvable");
+        AutN := PcGroupAutPGroup(AutN);
+        OutN := AutN/PCore(AutN,p);
+        Info(InfoFusion, 2, "\tp'-part : ", StructureDescription(OutN));
+        if Exponent(OutN) mod a <> 0 or ForAll(ConjugacyClasses(OutN), x -> Order(Representative(x)) <> a) then
+            Info(InfoFusion, 2, "\tNo element of order ", a, " in Aut(N_S(E))");
+            return false;
+        fi;
+    fi;
+
+    return true;
+end;
+
+# Lifts in $\Alt(2p)$ (p^2 only)
+IsProtoEssentialSubgroup_EABLiftAlt := function(S,E,N)
+    local p, AutN, OutN;
+
+    p := PrimePGroup(S);
+    
+    Info(InfoFusion, 2, "\tChecking lift of type Alt(2p)");
+    if p <= 3 then 
+        Info(InfoFusion, 2, "\tDoesn't apply for p <= 3");
+        return false;
+    elif Index(N, E) <> p^2 then 
+        Info(InfoFusion, 2, "\tDoesn't apply since Out_S(E) not eab order p^2");
+        return false;
+    fi;
+    
+    Info(InfoFusion, 2, "\tNeed a non-abelian subgroup of order ", (p-1), "^2", " in Aut(N_S(E))");
+    Info(InfoFusion, 2, "\tConstructing Aut(N_S(E))");
+    AutN := AutomorphismGroupPGroup(N);
+    if AutN.size mod (p-1)^2 <> 0 then 
+        Info(InfoFusion, 2, "\tNo subgroup of order ", (p-1), "^2", " in Aut(N_S(E))");
+        return false;
+    fi;
+    if AutN.glOrder = 1 then 
+        Info(InfoFusion, 2, "\tAut(N_S(E)) is solvable");
+        AutN := PcGroupAutPGroup(AutN);
+        OutN := AutN/PCore(AutN,p);
+        Info(InfoFusion, 2, "\tp'-part : ", StructureDescription(OutN));
+        if IsAbelian(OutN) then
+            Info(InfoFusion, 2, "\tAny subgroup of order ", (p-1), "^2 is abelian in Aut(N_S(E))");
+            return false;
+        fi;
+    fi;
+
+    return true;
+end;
+
+IsProtoEssentialSubgroup_Lift := function(S, E, i)
+    local N;
+
+    # cyclic case - nothing guaranteed to lift
+    if i = 0 then 
+        return true;
+    fi;
+
+    N := Normalizer(S, E);
+    
+    Info(InfoFusion, 1, "Lift check for type ", i, " and order ", Index(N, E), 
+        " with [Rank(N_S(E)), Class(N_S(E))] = ", [Rank(N), NilpotencyClassOfGroup(N)]);
+
+    # eab case
+    if i = 1 then
+        if IsProtoEssentialSubgroup_EABLiftSL2q(S,E,N) or IsProtoEssentialSubgroup_EABLiftAlt(S,E,N) then 
+            Info(InfoFusion, 1, "Lift check passed");
+            return true;
+        else 
+            Info(InfoFusion, 1, "Lift check failed");
+            Info(InfoFusion, 1, Concatenation(List([1..50], i -> "_")));
+            return false;
+        fi;
+    fi;
+
+    # TODO: Code others
+    return true;
+end;
+
 # Minor change to the actual function ExponentsAutPGroup 
 # that allows us to not crash when base is not in Source(B.agHomom)
 ExponentsAutPGroup_ := function ( B, auto )
     local exps, imgs, perm, news, tmpa, j, e, s, n, subs, base;
+
+    if not IsBound(B.agHomom) then 
+        return fail;
+    fi;
+
     exps := List( B.agAutos, x -> 0);
     imgs := List( B.gens, x -> ExponentsOfPcElement( B.spec, x ^ auto ));
     base := imgs{[ 1 .. B.rank ]}{[ 1 .. B.rank ]};
@@ -219,7 +326,6 @@ IsProtoEssentialSubgroup_Aut := function(S, E, i)
 
     # EAB cannot be refined here
     if IsElementaryAbelian(E) then 
-        Info(InfoFusion, 1, "Is EAB");
         return true; 
     fi;
 
@@ -230,10 +336,10 @@ IsProtoEssentialSubgroup_Aut := function(S, E, i)
         " with [Rank(E), Class(E)] = ", [Rank(E), NilpotencyClassOfGroup(E)]);
     
     AutE := AutomorphismGroupPGroup(E, "Over");
-    Info(InfoFusion, 1, "  Aut(E) has order ", AutE.size);
+    Info(InfoFusion, 2, "\tAut(E) has order ", AutE.size);
 
     if AutE.glOrder = 1 then 
-        Info(InfoFusion, 1, "  Aut(E) is soluble");
+        Info(InfoFusion, 2, "\tAut(E) is soluble");
     
         if i > 0 then 
             Info(InfoFusion, 1, "Invalid - Out_S(E) not cyclic");
@@ -248,7 +354,7 @@ IsProtoEssentialSubgroup_Aut := function(S, E, i)
             return false;
         fi;
     else 
-        Info(InfoFusion, 1, "  Aut(E) is not soluble");
+        Info(InfoFusion, 2, "\tAut(E) is not soluble");
 
         if IsBound(AutE.glOper) and i > 0 then 
             G := Group(AutE.glOper);
@@ -270,7 +376,7 @@ IsProtoEssentialSubgroup_Aut := function(S, E, i)
         Info(InfoFusion, 1, Concatenation(List([1..50], i -> "_")));
         return false;
     elif AutE.glOrder = 1 then 
-        Info(InfoFusion, 1, "  Out_S(E) can project onto Aut(E)/O_p(Aut(E))");
+        Info(InfoFusion, 2, "\tOut_S(E) can project onto Aut(E)/O_p(Aut(E))");
     fi;
 
     Exp := List(GeneratorsOfGroup(AutSE), x -> ExponentsAutPGroup_(AutE_PC!.autrec, x));
@@ -296,26 +402,25 @@ IsProtoEssentialSubgroup_Aut := function(S, E, i)
             SetAutomorphismDomain(AutE, E);
             return true;
         else 
-            Info(InfoFusion, 1, "  Can be radical with respect to the ag-maps");
+            Info(InfoFusion, 2, "\tCan be radical with respect to the ag-maps");
         fi;
     else 
-        Info(InfoFusion, 1, "  Aut_S(E) has gl-maps");
+        Info(InfoFusion, 2, "\tAut_S(E) has gl-maps");
     fi;
 
     AutE := ConvertHybridAutGroup(AutE);
     SetIsGroupOfAutomorphisms(AutE, true);
     SetAutomorphismDomain(AutE, E);
 
-    Info(InfoFusion, 1, "  Finding nice monomorphism for Aut(E)");
+    Info(InfoFusion, 2, "\tFinding nice monomorphism for Aut(E)");
     AssignNiceMonomorphismAutomorphismGroup(AutE, E);
-    Info(InfoFusion, 1, "  Computed");
+    Info(InfoFusion, 2, "\tComputed");
     n := NiceMonomorphism(AutE);
 
     AutSE := Image(n, AutSE);
     AutE := Image(n, AutE);
     AutEp := PCore(AutE, p);
     
-
     # Aut_S(E) \cap O_p(\Aut(E)) = Inn(E)
     if Size(Intersection(AutSE, AutEp)) <> IndexNC(E, Center(E)) then 
         Info(InfoFusion, 1, "Cannot be radical");
@@ -344,5 +449,100 @@ IsProtoEssentialSubgroup := function(S, E)
         return false;
     fi;
 
+    if not IsProtoEssentialSubgroup_Lift(S, E, i) then 
+        return false;
+    fi;
+
     return IsProtoEssentialSubgroup_Aut(S, E, i);
+end;
+
+OnImageNM := function(n)
+    return function(x, phi)
+        return Image(PreImagesRepresentative(n,phi), x);
+    end;
+end;
+
+# TODO: Accommodate for:
+# - not checking Aut(S)-conjugates of certain subgroups
+# - checking only the first iteration (required to support simple fusion systems)
+AllProtoEssentials := function(arg...)
+    local S, onlyOne, p, L, i, q, Q, C, C0, AutS, AutS_PC, n;
+
+    S := arg[1];
+
+    if Length(arg) > 1 then 
+        onlyOne := arg[2];
+    else 
+        onlyOne := false;
+    fi;
+
+    if IsAbelian(S) then 
+        return [];
+    fi;
+
+    # TODO: Use the other algorithm for those with q-pearls
+
+    p := PrimePGroup(S);
+
+    if not onlyOne then 
+        L := LowerCentralSeries(S);
+        L := CompositionSeriesThrough(S, L);
+        
+        i := Position(L, TrivialSubgroup(S));
+        L := L{[1..i]};
+        Info(InfoFusion, 1, "S has order ", p, "^", Length(L)-1);
+        
+        i := Position(L, DerivedSubgroup(S));
+        L := L{[i+1..Length(L)]};
+        Info(InfoFusion, 1, Length(L), " iterations");
+        
+        q := List(L, A -> NaturalHomomorphismByNormalSubgroup(S,A));
+
+        Info(InfoFusion, 1, "Finding conjugacy classes");
+        
+        Q := List(q, Image);
+        C := List(Q, A -> ClassesSolvableGroup(A,0));
+        C := List(C, A -> Filtered(A, a -> Order(a.representative) = p));
+        C := List(C, A -> List(A, a -> a.centralizer));
+        C := List([1..Length(C)], i -> List(C[i], A -> PreImage(q[i], A)));
+        
+        C0 := Union(C);
+    else 
+        Info(InfoFusion, 1, "Only the top iteration");
+        Info(InfoFusion, 1, "Finding conjugacy classes");
+        C := ClassesSolvableGroup(S, 0);;
+        C := Filtered(C, a -> Order(a.representative) = p);;
+        C0 := List(C, a -> a.centralizer);;
+    fi;
+
+    Info(InfoFusion, 1, Length(C0), " subgroups to consider up to count");
+    Info(InfoFusion, 2, "Determining Aut(S) reps");
+
+    AutS := AutomorphismGroupPGroup(S, "Over");
+    Info(InfoFusion, 2, "\tAut(S) has order ", AutS.size);
+
+    if AutS.glOrder = 1 then 
+        Info(InfoFusion, 2, "\tAut(S) is solvable");
+        AutS_PC := PcGroupAutPGroup(AutS);
+        AutS := ConvertHybridAutGroup(AutS);
+        n := GroupHomomorphismByImagesNC(AutS, AutS_PC);
+        AutS := AutS_PC;
+    else 
+        Info(InfoFusion, 2, "\tAut(S) is not solvable");
+        AutS := ConvertHybridAutGroup(AutS);
+        AssignNiceMonomorphismAutomorphismGroup(AutS, S);
+        n := NiceMonomorphism(AutS);
+        AutS := Image(n, AutS);
+    fi;
+
+    Info(InfoFusion, 2, "\tFinding Aut(S) reps");
+    C0 := Orbits(AutS, C0, OnImageNM(n));
+    Info(InfoFusion, 1, Length(C0), " up to Aut(S)-conjugacy");
+
+    C0 := List(C0, Representative);
+    
+    Info(InfoFusion, 1, "Checking proto-essentials");
+    C0 := Filtered(C0, E -> IsProtoEssentialSubgroup(S,E));
+
+    return C0;
 end;
