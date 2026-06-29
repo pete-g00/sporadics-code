@@ -47,7 +47,7 @@ Index(CL4P, Intersection(CL4P, FrattiniSubgroup(P))); # should be 3
 LS := LowerCentralSeries(S);
 T := Centralizer(S, LS[7]);
 
-CommutatorSubgroup(P, Center(T)) = Center(P); # should be true
+Center(T) = Z2P; # should be true
 
 # -------------------------------------------------------------------------------------------------
 # $O^{3'}(\Out_F(R)) \cong \SL_2(3)$

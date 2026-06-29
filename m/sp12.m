@@ -9,6 +9,34 @@ M := MaximalSubgroups(A5);
 M := [A`subgroup : A in M];
 #[A : A in M | Index(A, pCore(A,3)) mod 3^7 eq 0]; // should be 0
 
+
+// Ruling out the remaining maximal subgroups -- the table below lists out groups $C$ such that $G$ cannot be isomorphic to a subgroup of $C$ 
+// since all maximal subgroups $T$ such that $[T : O_3(T)]_3 \geq 3^7$ is equal to $A_i$, $B_j$ or $C_k$, which have already been ruled out.
+// C            Description                                 Reference                       O^{3'}(T/O_3(T))
+// -----------------------------------------------------------------------------------------------------------------------------------------------------------------
+// C_1          \SL_6(3)                                    [BHRD, Tables 8.24 and 8.25]    A_2, A_4, B_3 
+// C_2          \Sp_2(3) \times \SL_5(3)                    MAGMA                           A_2, B_3
+// C_3          \SL_2(3) \times \SL_2(3) \times \SL_4(3)    MAGMA                           B_3, B_8 
+// C_4          \SL_2(9) \times \SL_4(3)                    MAGMA                           B_3, B_9 
+// C_5          \SL_4(3) \times \Sp_4(3)                    MAGMA                           A_5, B_3, B_{11}, B_{13}, C_3, C_4 
+// C_6          \SL_2(3) \times \Sp_6(3)                    MAGMA                           A_4 
+// C_7          13 : 3 \times \Sp_6(3)                      MAGMA                           A_4 
+// C_8          \SL_2(3) \times \SL_3(3) \times \Sp_4(3)    MAGMA                           B_{11} 
+// C_9          \SL_3(3) \times \Sp_6(3)                    MAGMA                           B_7, B_{10}, B_{11}, C_6, C_7, C_8 
+// C_{10}       \Sp_8(3)                                    [BHRD, Tables 8.48 and 8.49]    A_1, A_4, A_5, C_6 
+// C_{11}       \SL_2(3) \times \Sp_4(3) \times \Sp_4(3)    MAGMA                           A_5, B_5, B_6 
+// C_{12}       (Q_8 \times Q_8) : 3 \times \Sp_6(3)        MAGMA                           A_4, C_6
+// C_{13}       \SL_2(3) \times \SL_2(3) \times \Sp_6(3)    MAGMA                           B_6, C_6, C_{12} 
+// C_{14}       \SL_2(3) \times \Sp_4(3^2)                  MAGMA                           A_1 
+// C_{15}       \SL_2(3) \times \Sp_8(3)                    MAGMA                           B_3, B_4, C_6, C_{10}, C_{11}, C_{13}, C_{14} 
+// C_{16}       \SL_2(5) \times \Sp_6(3)                    MAGMA                           A_4, C_6 
+// C_{17}       2^{1+4}_- \ldotp \Alt(5) \times \Sp_6(3)    MAGMA                           A_4, C_6, C_{12}, C_{16}
+// C_{18}       \SL_2(9) \times \Sp_6(3)                    MAGMA                           B_5, C_6, C_8, C_{16}
+// C_{19}       \SL_2(3^3) : 3 \times \Sp_4(3)              MAGMA                           B_{10} 
+// C_{20}       \SL_2(3) \wr 3 \times \Sp_4(3)              MAGMA                           B_6 
+// C_{21}       \Sp_4(3) \times \Sp_6(3)                    MAGMA                           A_5, B_{11}, B_{12}, C_6, C_{11}, C_{13}, C_{17}, C_{18}, C_{19}, C_{20}
+// C_{22}       \Sp_{10}(3)                                 [BHRD, Tables 8.64 and 8.65]    A_2, A_3, B_3, B_{11}, C_6, C_{10}, C_{15}, C_{21}
+
 // $\Sp_2(3) \times \SL_5(3)$ has valid section(s): $\Sp_2(3) \times \SL_4(3)$ and $\SL_5(3)$
 C2 := DirectProduct(Sp(2,3), SL(5,3));
 M := MaximalSubgroups(C2);
